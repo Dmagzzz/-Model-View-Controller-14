@@ -1,5 +1,5 @@
 const router = require('express').Router();
-const { Project, User, Post } = require('../models');
+const { Comment, User, Post } = require('../models');
 const withAuth = require('../utils/auth');
 
 router.get('/', async (req, res) => {
@@ -29,38 +29,38 @@ router.get('/', async (req, res) => {
 
 router.get('/project/:id', async (req, res) => {
   try {
-    const projectData = await Project.findByPk(req.params.id, {
+    const postData = await Post.findByPk(req.params.id, {
       include: [
+        User,
         {
-          model: User,
-          attributes: ['name'],
+          model: Comment,
+          include: [User],
         },
       ],
+      raw: true
     });
-
-    const project = projectData.get({ plain: true });
-
+ console.log(postData)
     res.render('project', {
-      ...project,
+      ...postData,
       logged_in: req.session.logged_in
     });
   } catch (err) {
+    console.log(err)
     res.status(500).json(err);
   }
 });
 
 // Use withAuth middleware to prevent access to route
-router.get('/profile', withAuth, async (req, res) => {
+router.get('/post', withAuth, async (req, res) => {
   try {
     // Find the logged in user based on the session ID
     const postData = await Post.findAll( {
       include: [User],
       raw:true
     });
-    console.log(postData)
   
-    res.render('profile', {
-      ...postData,
+    res.render('post', {
+      posts:postData,
       logged_in: true
     });
   } catch (err) {
@@ -71,7 +71,7 @@ router.get('/profile', withAuth, async (req, res) => {
 router.get('/login', (req, res) => {
   // If the user is already logged in, redirect the request to another route
   if (req.session.logged_in) {
-    res.redirect('/profile');
+    res.redirect('/post');
     return;
   }
 
